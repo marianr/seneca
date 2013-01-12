@@ -1,33 +1,34 @@
-/* Copyright (c) 2010-2012 Richard Rodger */
+/* Copyright (c) 2010-2013 Richard Rodger */
 
-var common   = require('../lib/common');
-var seneca   = require('../lib/seneca');
+"use strict";
+
+var common   = require('../lib/common')
+var seneca   = require('../lib/seneca')
 
 
 var eyes    = common.eyes
-var assert  = common.assert
+var assert  = require('chai').assert
 var gex     = common.gex
 
 
 var logger = require('./logassert')
 
 
-module.exports = {
+describe('seneca', function(){
 
-
-  quick: function(){
+  it('quick', function(){
     var si = seneca()
-    si.use(function(si,opts,cb){
+    si.use(function quickplugin(si,opts,cb){
       si.add({a:1},function(args,cb){cb(null,{b:2})})
       cb()
     })
     si.act({a:1},function(err,out){
-      console.log(out)
+      assert.equal(out.b,2)
     })
-  },
+  })
 
 
-  failgen: function() {
+  it('failgen', function() {
 
     try {
       var i = 0
@@ -38,7 +39,7 @@ module.exports = {
       assert.fail()
     }
     catch(e) {
-      eyes.inspect(e)
+      //eyes.inspect(e)
       assert.equal('Seneca: after init 0',e.seneca.error.message)
       assert.equal('seneca/callback_exception',e.seneca.code)
     }
@@ -252,11 +253,11 @@ module.exports = {
 
       assert.equal('abcde',cblog)
     })
-  },
+  })
 
 
 
-  register: function() {
+  it('register', function() {
     seneca({},function(err,si){
       var initfn = function(){}
       var emptycb = function(){}
@@ -264,6 +265,7 @@ module.exports = {
       try { si.register() } catch( e ) { 
         assert.equal('seneca/register_no_callback',e.seneca.code)
       }
+
 
       try { si.register({}) } catch( e ) { 
         assert.equal('seneca/register_no_callback',e.seneca.code)
@@ -280,7 +282,8 @@ module.exports = {
       }
 
       try { si.register({name:'a',role:1,init:initfn},emptycb) } catch( e ) { 
-        //console.log(e)
+        eyes.inspect(e)
+        console.log(e)
         assert.equal('seneca/register_invalid_plugin',e.seneca.code)
       }
 
@@ -290,11 +293,11 @@ module.exports = {
       }
 
     })
-  },
+  })
 
 
-
-  logging: function() {
+/* DELETE - OBSOLETE
+  it('logging', function() {
     var log = logger([
       ['init','start'],
       ['register'],
@@ -324,8 +327,6 @@ module.exports = {
         assert.equal(log.len,log.index())
       }
     )
-                
-
 
     try {
       seneca({logger:logger(['bad'])},function(){})
@@ -343,11 +344,13 @@ module.exports = {
         assert.equal(13,log.index())
       }
     )
-  },
+  })
+*/
 
 
 
-  action: function() {
+
+  it('action', function() {
     var log = logger([
       [],[],[],[], [],[],[],[],[],[], [],[],[],
       ['act','in'],
@@ -381,11 +384,11 @@ module.exports = {
         })
       }
     )
-  },
+  })
 
 
 
-  plugins: function() {
+  it('plugins', function() {
 
     seneca({plugins:['echo']},function(err,seneca){
       assert.isNull(err)
@@ -508,7 +511,7 @@ module.exports = {
     )
 
 
-
+    /* breaks Mocha
     // loading a fake module: node_modules/mock3
     seneca(
       {plugins:['mock3']},
@@ -520,10 +523,11 @@ module.exports = {
         })
       }
     )
-  },
+    */
+  })
 
 
-  pin: function() {
+  it('pin', function() {
     seneca(
       {},//{log:'print'},
       function(err,si){
@@ -550,7 +554,37 @@ module.exports = {
         api.v2b({p3:'B'},function(e,r){assert.equal(r.p3,'B')})
       }
     )
-  }
+  })
 
 
-}
+  it('compose', function() {
+    var si = seneca({log:'print'})   
+
+    si.add({A:1},function(args,cb){
+      cb(null,{x:2})
+    })
+    si.add({B:1},function(args,cb){
+      cb(null,{x:args.x+1})
+    })
+    si.add({C:1},function(args,cb){
+      cb(null,{y:args.y+1})
+    })
+
+    si.act({A:1},function(e,r){assert.equal(r.x,2)})
+    si.act({B:1,x:1},function(e,r){assert.equal(r.x,2)})
+
+    si.compose({D:1},[{A:1},{B:1}])
+    si.act({D:1},function(e,r){assert.equal(r.x,3)})
+
+    si.compose({E:1},[{A:1,modify$:function(res){res.y=res.x}},{C:1}])
+    si.act({E:1},function(e,r){assert.equal(r.y,3)})
+
+
+    si.add({F:1},function(args,cb){
+      cb(null,{y:args.y+args.z})
+    })
+    si.compose({G:1},[{A:1,modify$:function(res,args){res.y=res.x,res.z=args.z}},{F:1}])
+    si.act({G:1,z:3},function(e,r){assert.equal(r.y,5)})
+  })
+
+})
