@@ -1,27 +1,28 @@
-/* Copyright (c) 2010-2012 Richard Rodger */
+/* Copyright (c) 2010-2013 Richard Rodger */
 
-var seneca   = require('../../lib/seneca')
-var common   = require('../../lib/common')
-
-var shared   = require('./shared')
-
-var assert  = common.assert
-var eyes    = common.eyes
-var async   = common.async
+"use strict";
 
 
-var configMemStore = 
-{ log:'print',
-  plugins:[
-    { name:'mem-store' }
-  ]
-}
+var seneca = require('../..')
 
-var si = seneca(configMemStore)
+var shared = seneca.test.store.shared
+
+
+var si = seneca()
+si.use('mem-store')
+
 si.__testcount = 0
 var testcount = 0
 
-module.exports = {
-  basictest: (testcount++, shared.basictest(si)),
-  closetest: shared.closetest(si,testcount)
-}
+
+describe('mem', function(){
+  it('basic', function(done){
+    testcount++
+    shared.basictest(si,done)
+  })
+
+  it('close', function(done){
+    shared.closetest(si,testcount,done)
+  })
+})
+

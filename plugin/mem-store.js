@@ -2,11 +2,13 @@
 
 "use strict"
 
+
 var store   = require('./store')
 
 var _       = require('underscore')
 var idgen   = require('idgen')
 var uuid    = require('node-uuid')
+
 
 
 function MemStore() {
@@ -69,7 +71,7 @@ function MemStore() {
 
     entmap[base][name][ent.id] = ent;
     
-    si.log(args.tag$,'save',ent,mark)
+    si.log.debug(args.tag$,'save',ent,mark)
     cb(null,ent);
   }
 
@@ -79,7 +81,7 @@ function MemStore() {
     var q    = args.q
 
     list(qent,q,function(err,list){
-      si.log(args.tag$,'load',list[0],mark)
+      si.log.debug(args.tag$,'load',list[0],mark)
       cb(err, list[0] || null);
     })
   }
@@ -90,7 +92,7 @@ function MemStore() {
     var q    = args.q
 
     list(qent,q,function(err,list){
-      si.log(args.tag$,'list',list.length,list[0])
+      si.log.debug(args.tag$,'list',list.length,list[0])
       cb(err, list);
     })
   }
@@ -120,7 +122,7 @@ function MemStore() {
           var canon = qent.canon$({object:true})
           
           delete entmap[canon.base][canon.name][ent.id]
-          si.log(args.tag$,'remove',ent)
+          si.log.debug(args.tag$,'remove',ent)
         })
 
         if( !load ) {
@@ -134,17 +136,17 @@ function MemStore() {
 
 
   self.close$ = function(args,cb){
-    si.log(args.tag$,'close')
+    si.log.debug(args.tag$,'close')
     cb()
   }
 
 
 
-  self.init = function(init_si,init_opts,cb) {
-    si = init_si
+  self.init = function(seneca,options,cb) {
+    si = seneca
     opts = _.extend({
       idlen:6
-    },init_opts)
+    },options)
 
     parent.init(si,opts,function(err,canondesc){
       if( err ) return cb(err);
