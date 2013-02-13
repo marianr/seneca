@@ -8,6 +8,9 @@ eyes      = common.eyes;
 _         = common._;
 uuid      = common.uuid;
 
+var nid = require('nid')
+
+
 var MIN_WAIT = 16
 var MAX_WAIT = 65336
 
@@ -21,7 +24,7 @@ function RelationalStore() {
   ARRAY_TYPE  = 'a'
   DATE_TYPE   = 'd'
 
-  mark = common.idgen(4)
+  mark = nid()
 
   self.waitmillis = MIN_WAIT
   self.dbinst     = null
@@ -29,7 +32,7 @@ function RelationalStore() {
 
   error = function(args,err,cb) {
     if( err ) {
-      seneca.log(args.tag$,'error: '+err)
+      seneca.log(args.actid$,'error: '+err)
       seneca.fail({code:'entity/error',store:self.name},cb)
 
       if( 'ECONNREFUSED'==err.code || 'notConnected'==err.message ) {
@@ -46,17 +49,17 @@ function RelationalStore() {
 
 
   reconnect = function(args) {
-    seneca.log(args.tag$,'attempting db reconnect')
+    seneca.log(args.actid$,'attempting db reconnect')
 
     self.configure(self.spec, function(err,me){
       if( err ) {
-        seneca.log(args.tag$,'db reconnect (wait '+self.waitmillis+'ms) failed: '+err)
+        seneca.log(args.actid$,'db reconnect (wait '+self.waitmillis+'ms) failed: '+err)
         self.waitmillis = Math.min(2*self.waitmillis,MAX_WAIT)
         setTimeout( function(){reconnect(args)}, self.waitmillis )
       }
       else {
         self.waitmillis = MIN_WAIT
-        seneca.log(args.tag$,'reconnect ok')
+        seneca.log(args.actid$,'reconnect ok')
       }
     })
   }

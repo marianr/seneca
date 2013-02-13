@@ -15,11 +15,16 @@ module.exports = function echo( si,opts,cb ) {
       _.filter(_.keys(args),function(n){return n.match(/\$$/)||exclude[n]})
     )
 
-    cb(null,out)
+    function finish() { cb(null,out) }
+
+    if( opts.delay && _.isNumber( opts.delay ) ) {
+      setTimeout(finish,opts.delay)
+    }
+    else finish();
   })
 
 
-  cb( null, function(req,res,next){
+  cb( null, {service:function(req,res,next){
     if( 0 == req.url.indexOf('/echo') ) {
       res.writeHead(200)
       var content = req.url
@@ -31,5 +36,5 @@ module.exports = function echo( si,opts,cb ) {
       res.end(content)
     }
     else next();
-  })
+  }})
 }
