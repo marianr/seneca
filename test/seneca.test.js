@@ -1,6 +1,11 @@
 /* Copyright (c) 2010-2013 Richard Rodger */
-
 "use strict";
+
+
+// mocha seneca.test.js
+
+
+var util = require('util')
 
 var common   = require('../lib/common')
 var seneca   = require('../lib/seneca')
@@ -16,6 +21,11 @@ var logger = require('./logassert')
 
 describe('seneca', function(){
 
+  it('version', function(){
+    var si = seneca()
+    assert.equal(si.version,'0.5.5')
+  })
+
   it('quick', function(){
     var si = seneca()
     si.use(function quickplugin(si,opts,cb){
@@ -23,6 +33,9 @@ describe('seneca', function(){
       cb()
     })
     si.act({a:1},function(err,out){
+      assert.equal(out.b,2)
+    })
+    si.act('a:1',function(err,out){
       assert.equal(out.b,2)
     })
   })
@@ -409,7 +422,7 @@ describe('seneca', function(){
       }
       self.init = function(si,opts,cb){
         si.add({role:'mock1',cmd:'foo'},function(args,cb){
-          args.parent$(args,function(err,out){
+          this.parent(args,function(err,out){
             cb(null,'bar:'+out)
           })
         })
@@ -477,13 +490,16 @@ describe('seneca', function(){
 
         api.v2a({p3:'A'},function(e,r){assert.equal(r.p3,'A')})
         api.v2b({p3:'B'},function(e,r){assert.equal(r.p3,'B')})
+
+        var acts = si.pinact({p1:'v1',p2:'*'})
+        assert.equal("[ { p1: 'v1', p2: 'v2a' }, { p1: 'v1', p2: 'v2b' } ]",util.inspect(acts))
       }
     )
   })
 
 
   it('compose', function() {
-    var si = seneca({log:'print'})   
+    var si = seneca()
 
     si.add({A:1},function(args,cb){
       cb(null,{x:2})
@@ -510,6 +526,23 @@ describe('seneca', function(){
     })
     si.compose({G:1},[{A:1,modify$:function(res,args){res.y=res.x,res.z=args.z}},{F:1}])
     si.act({G:1,z:3},function(e,r){assert.equal(r.y,5)})
+  })
+
+
+  it('strargs', function() {
+    var si = seneca()
+    si.add({a:1,b:2},function(args,done){done(null,(args.c||-1)+parseInt(args.b)+parseInt(args.a))})
+    si.act({a:1,b:2,c:3},function(err,out){ assert.isNull(err); assert.equal(6,out) })
+
+    si.act('a:1,b:2',{c:3},function(err,out){ assert.isNull(err); assert.equal(6,out) })
+    si.act('a:1,b:2',function(err,out){ assert.isNull(err); assert.equal(2,out) })
+
+    try {
+      si.act('a:,b:2',{c:3},function(err,out){assert.fail()})
+    }
+    catch( e ) {
+      assert.equal(e.seneca.code,'seneca/string-args-syntax-error')
+    }
   })
 
 })

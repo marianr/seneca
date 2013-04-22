@@ -9,31 +9,33 @@ var _       = require('underscore')
 
 
 
-module.exports = function config( si,opts,cb ) {
+module.exports = function config( seneca,opts,cb ) {
 
-  var config = {}
+  var ref = {config:{}}
 
   if( opts.file ) {
-    fs.readFile( opts.file, function(err,text){
-      if( err ) return cb(err);
 
-      config = JSON.parse(text)
-      cb()
-    }) 
+    // TODO: need an async way to this
+    //fs.readFile( opts.file, function(err,text){
+    //if( err ) return cb(err);
+    var text = fs.readFileSync( opts.file )
+    ref.config = JSON.parse(text)
+    cb()
   }
   else if( _.isObject(opts.object) ) {
-    config = _.extend({},opts.object)
+    ref.config = _.extend({},opts.object)
     
     cb()
   }
-  else si.fail(cb,'no-file')
+  else seneca.fail(cb,'no-file')
 
-  si.add({role:'config',cmd:'get'},function(args,cb){
+
+  seneca.add({role:'config',cmd:'get'},function(args,cb){
     var base = args.base || null
-    var root  = base ? (config[base]||{}) : config 
+    var root  = base ? (ref.config[base]||{}) : ref.config 
     var val   = args.key ? root[args.key] : root
 
-    val = common.copydata(val)
+    val = seneca.util.copydata(val)
 
     cb(null,val)
   })
